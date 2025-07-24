@@ -1,0 +1,57 @@
+# Node.js (backend + frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Logs
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.vscode/
+.idea/
+*.swp
+
+# Next.js (frontend)
+.next/
+out/
+
+# Build output
+dist/
+build/
+
+# GitHub Actions secrets (do not commit)
+.github/token.env
+
+# Zip or export artifacts
+*.zip
+
+# Coverage reports
+coverage/
+lcov-report/
+
+# Optional: Docker
+docker-compose.override.yml
+*.tar
+
+# Optional: PM2 logs
+pids/
+*.pid
+
+# Optional: local database dumps
+*.sqlite
+dump.rd

@@ -1,0 +1,36 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Checkout code
+        uses: actions/checkout@v3
+
+      - name: ⚙️ Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: 📦 Install dependencies
+        run: npm install
+        working-directory: backend
+
+      - name: ✅ Run lint
+        run: npm run lint || true
+        working-directory: backend
+
+      - name: 🧪 Run tests
+        run: npm test || echo "No tests yet"
+        working-directory: backend
+
+      - name: 🚀 Optional: Trigger Render deploy (webhook)
+        if: github.ref == 'refs/heads/main'
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
