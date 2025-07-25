@@ -17,6 +17,15 @@ exports.signup = async (req, res) => {
     res.status(500).json({ message: "Server error", err });
   }
 };
+// controllers/authController.js
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch user" });
+  }
+};
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;

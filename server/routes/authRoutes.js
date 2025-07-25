@@ -1,18 +1,29 @@
 const express = require("express");
+const passport = require("passport");
+const jwt = require("jsonwebtoken");
 const router = express.Router();
-const { signup, login } = require("../controllers/authController");
+const authMiddleware = require("../middleware/authMiddleware");
+const { signup, login,getCurrentUser } = require("../controllers/authController");
 
+// Email/Password auth
 router.post("/signup", signup);
 router.post("/login", login);
+router.get("/me", authMiddleware, getCurrentUser);
 
-// Google OAuth start
+// --- Google OAuth Login ---
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
 
-// Google OAuth callback
-router.get("/google/callback", passport.authenticate("google", { session: false }), (req, res) => {
-  const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET);
-  // Redirect to frontend with token (or return token as JSON)
-  res.redirect(`http://localhost:3000/oauth-success?token=${token}`);
-});
+// --- Google OAuth Callback ---
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login", session: true }), // session is true if you're using sessions
+  (req, res) => {
+    // Issue JWT if needed (can also skip if using sessions)
+    const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+
+    // Redirect to frontend with token (or handle differently)
+    res.redirect(`${process.env.CLIENT_URL}/oauth-success?token=${token}`);
+  }
+);
 
 module.exports = router;
