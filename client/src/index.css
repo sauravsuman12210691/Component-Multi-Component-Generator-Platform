@@ -125,3 +125,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+.input {
+  @apply border p-2 w-full rounded;
+}
+.btn {
+  @apply bg-blue-500 text-white p-2 rounded hover:bg-blue-600;
+}

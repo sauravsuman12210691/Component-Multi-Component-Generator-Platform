@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/Header';
-import { sessionAPI, Session } from '@/lib/api';
-import { Plus, Calendar, Clock, Code, Trash2 } from 'lucide-react';
+import { Plus, Calendar, Code, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+import { sessionAPI, Session } from '@/lib/api'; // Adjust import path
 
 const Dashboard: React.FC = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -15,54 +16,37 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadSessions();
-  }, []);
-
-  const loadSessions = async () => {
+  const fetchSessions = async () => {
     try {
       const data = await sessionAPI.getSessions();
       setSessions(data);
-    } catch (error) {
-      toast({
-        title: "Failed to load sessions",
-        description: "Please try refreshing the page.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: 'Error fetching sessions' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const createNewSession = async () => {
-    setIsCreating(true);
+  const handleCreateSession = async () => {
     try {
-      const newSession = await sessionAPI.createSession();
-      navigate(`/session/${newSession._id}`);
-    } catch (error) {
-      toast({
-        title: "Failed to create session",
-        description: "Please try again.",
-        variant: "destructive",
-      });
+      setIsCreating(true);
+      const session = await sessionAPI.createSession('Untitled Session');
+      toast({ title: 'Session created' });
+      navigate(`/playground`);
+    } catch {
+      toast({ title: 'Error creating session' });
+    } finally {
       setIsCreating(false);
     }
   };
-
-  const deleteSession = async (sessionId: string) => {
+  
+  const handleDelete = async (id: string) => {
     try {
-      await sessionAPI.deleteSession(sessionId);
-      setSessions(sessions.filter(s => s._id !== sessionId));
-      toast({
-        title: "Session deleted",
-        description: "The session has been successfully deleted.",
-      });
-    } catch (error) {
-      toast({
-        title: "Failed to delete session",
-        description: "Please try again.",
-        variant: "destructive",
-      });
+      await sessionAPI.deleteSession(id);
+      setSessions(prev => prev.filter(s => s._id !== id));
+      toast({ title: 'Session deleted' });
+    } catch {
+      toast({ title: 'Failed to delete session' });
     }
   };
 
@@ -74,136 +58,66 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="container mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader>
-                  <div className="h-4 bg-muted rounded w-3/4"></div>
-                  <div className="h-3 bg-muted rounded w-1/2"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-20 bg-muted rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchSessions();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background px-6 py-8">
       <Header />
-      
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Your Sessions</h1>
-            <p className="text-muted-foreground">
-              Manage and continue your component generation sessions
-            </p>
-          </div>
-          <Button
-            onClick={createNewSession}
-            disabled={isCreating}
-            variant="gradient"
-            className="shadow-glow"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {isCreating ? "Creating..." : "New Session"}
-          </Button>
-        </div>
 
-        {sessions.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="flex items-center justify-center w-20 h-20 rounded-2xl gradient-primary mx-auto mb-6 shadow-glow">
-              <Code className="w-10 h-10 text-primary-foreground" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">No sessions yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-              Get started by creating your first session to begin generating beautiful React components with AI.
-            </p>
-            <Button
-              onClick={createNewSession}
-              disabled={isCreating}
-              variant="gradient"
-              size="lg"
-              className="shadow-glow"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create Your First Session
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sessions.map((session) => (
-              <Card
-                key={session._id}
-                className="group hover:shadow-subtle transition-all cursor-pointer border-border/50 hover:border-primary/20"
-                onClick={() => navigate(`/session/${session._id}`)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate group-hover:text-primary transition-smooth">
-                        {session.name}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1">
-                        <Calendar className="w-3 h-3" />
-                        {formatDate(session.createdAt)}
-                      </CardDescription>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteSession(session._id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      Updated {formatDate(session.updatedAt)}
-                    </div>
-                    
-                    {Array.isArray(session.chatHistory) && session.chatHistory.length > 0 && (
-  <div className="bg-muted/30 rounded-lg p-3 border border-border/50">
-    <p className="text-xs text-muted-foreground mb-1">Latest:</p>
-    <p className="text-sm line-clamp-2">
-      {session.chatHistory[session.chatHistory.length - 1]?.content || "No messages yet"}
-    </p>
-  </div>
-)}
-
-                    
-                    <div className="flex items-center gap-2">
-                      <Badge variant={session.jsx ? "default" : "secondary"} className="text-xs">
-                        {session.jsx ? "Has JSX" : "No JSX"}
-                      </Badge>
-                      <Badge variant={session.css ? "default" : "secondary"} className="text-xs">
-                        {session.css ? "Has CSS" : "No CSS"}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">Your Sessions</h1>
+        <Button onClick={handleCreateSession} disabled={isCreating}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Session
+        </Button>
       </div>
+
+      {isLoading ? (
+        <div>Loading...</div>
+      ) : sessions.length === 0 ? (
+        <p className="text-muted-foreground">No sessions yet. Create your first one!</p>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {sessions.map(session => (
+            <Card key={session._id} className="group relative hover:shadow-md transition cursor-pointer">
+<CardHeader
+  onClick={async () => {
+    try {
+      await sessionAPI.updateSession(session._id, {
+        // lastAccessed: new Date().toISOString(), // or any field you want to update
+      });
+      navigate(`/playground/${session._id}`);
+    } catch (error) {
+      toast({ title: 'Failed to update session' });
+    }
+  }}
+>
+                <CardTitle className="truncate text-base">{session.title || 'Untitled Session'}</CardTitle>
+                <CardDescription className="flex items-center gap-2 text-sm mt-1">
+                  <Calendar className="h-4 w-4" />
+                  {formatDate(session.createdAt)}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between px-4 pb-4">
+                <Badge variant="outline">
+                  <Code className="mr-1 h-4 w-4" />
+                  JSX + CSS
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDelete(session._id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

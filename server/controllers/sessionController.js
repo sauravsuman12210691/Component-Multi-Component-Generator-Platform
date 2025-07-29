@@ -1,88 +1,71 @@
-const Session = require("../models/Session");
+const Session = require('../models/Session');
 
-// POST /api/session
-exports.createSession = async (req, res) => {
+const createSession = async (req, res) => {
   try {
-    const { name } = req.body;
-    const newSession = await Session.create({
-      user: req.user._id,
-      name: name || "Untitled Session",
-    });
-    res.status(201).json(newSession);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to create session", error });
-  }
-};
+    const { title } = req.body;
+    if (!title) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
 
-// GET /api/session
-exports.getUserSessions = async (req, res) => {
-  try {
-    const sessions = await Session.find({ user: req.user._id }).sort({ updatedAt: -1 });
-    res.json(sessions);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch sessions", error });
-  }
-};
-
-// GET /api/session/:id
-exports.getSessionById = async (req, res) => {
-  try {
-    const session = await Session.findOne({ _id: req.params.id, user: req.user._id });
-    if (!session) return res.status(404).json({ message: "Session not found" });
-    res.json(session);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch session", error });
-  }
-};
-
-// PATCH /api/session/:id
-exports.updateSession = async (req, res) => {
-  try {
-    const updates = req.body;
-    updates.lastEdited = new Date();
-
-    const updatedSession = await Session.findOneAndUpdate(
-      { _id: req.params.id, user: req.user._id },
-      updates,
-      { new: true }
-    );
-
-    if (!updatedSession) return res.status(404).json({ message: "Session not found" });
-
-    res.json(updatedSession);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to update session", error });
-  }
-};
-
-// DELETE /api/session/:id
-exports.deleteSession = async (req, res) => {
-  try {
-    const deleted = await Session.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user._id,
+    const session = await Session.create({
+      user: req.userId,
+      title,
+      chatHistory: [],         // Optional: Initialize empty chat history
+      componentCode: '',       // Optional: Empty code stub
+      cssCode: ''
     });
 
-    if (!deleted) return res.status(404).json({ message: "Session not found" });
-
-    res.json({ message: "Session deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to delete session", error });
+    res.status(201).json(session); // 201 = Created
+  } catch (err) {
+    console.error('Error creating session:', err);
+    res.status(500).json({ message: 'Server error while creating session' });
   }
 };
 
-// GET /api/session/:id/export
-exports.exportSession = async (req, res) => {
+
+const getSessions = async (req, res) => {
+  const sessions = await Session.find({ user: req.userId }).sort({ createdAt: -1 });
+  res.json(sessions);
+};
+
+const getSessionById = async (req, res) => {
+  const session = await Session.findOne({ _id: req.params.id, user: req.userId });
+  res.json(session);
+};
+
+const updateSession = async (req, res) => {
   try {
-    const session = await Session.findOne({ _id: req.params.id, user: req.user._id });
+    const { chatHistory, componentCode, cssCode } = req.body;
+    const sessionId = req.params.id;
 
-    if (!session) return res.status(404).json({ message: "Session not found" });
+    // Find the session
+    const session = await Session.findOne({ _id: sessionId, user: req.userId });
+    if (!session) return res.status(404).json({ message: 'Session not found' });
 
-    const jsonContent = JSON.stringify(session, null, 2);
-    res.setHeader("Content-Type", "application/json");
-    res.setHeader("Content-Disposition", `attachment; filename="session-${session._id}.json"`);
-    res.send(jsonContent);
-  } catch (error) {
-    res.status(500).json({ message: "Failed to export session", error });
+    // Update fields if provided
+    if (chatHistory) session.chatHistory = chatHistory;
+    if (componentCode) session.componentCode = componentCode;
+    if (cssCode) session.cssCode = cssCode;
+
+    const updated = await session.save();
+    res.json(updated);
+
+  } catch (err) {
+    console.error('Error updating session:', err);
+    res.status(500).json({ message: 'Server error while updating session' });
   }
+};
+
+
+const deleteSession = async (req, res) => {
+  await Session.deleteOne({ _id: req.params.id, user: req.userId });
+  res.sendStatus(204);
+};
+
+module.exports = {
+  createSession,
+  getSessions,
+  getSessionById,
+  updateSession,
+  deleteSession,
 };

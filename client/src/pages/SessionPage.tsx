@@ -178,11 +178,7 @@ const SessionPage: React.FC = () => {
                   Created {new Date(session.createdAt).toLocaleDateString()}
                 </p>
               </div>
-              <ChatBox
-                messages={session.chatHistory}
-                onSendMessage={handleSendMessage}
-                isLoading={isGenerating}
-              />
+              
             </div>
           </ResizablePanel>
           

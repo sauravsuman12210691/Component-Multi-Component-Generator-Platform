@@ -13,8 +13,10 @@ export const tokenManager = {
 // ----------------------------
 // Axios instance with auth
 // ----------------------------
-const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api', // Update if needed for deployment
+// Define base axios instance
+export const axiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -29,19 +31,20 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// ----------------------------
-// Types
-// ----------------------------
+// Session type
 export interface Session {
   _id: string;
-  name: string;
-  jsx: string;
-  css: string;
-  chatHistory: ChatMessage[];
+  title: string;
+  jsx?: string;
+  css?: string;
+  chatHistory?: {
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+  }[];
   createdAt: string;
   updatedAt: string;
 }
-
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -66,37 +69,58 @@ export interface GenerateCodeResponse {
 // ----------------------------
 // Session API
 // ----------------------------
+
 export const sessionAPI = {
+  // Create a new session
+  createSession: async (title: string): Promise<Session> => {
+    const res = await axiosInstance.post('/sessions', { title });
+    return res.data;
+  },
+
+  // Get all sessions
   getSessions: async (): Promise<Session[]> => {
-    const response = await axiosInstance.get('/session');
-    return response.data;
+    const res = await axiosInstance.get('/sessions');
+    return res.data;
   },
 
-  getSession: async (id: string): Promise<Session> => {
-    const response = await axiosInstance.get(`/session/${id}`);
-    return response.data;
+  // Get a specific session by ID
+ getSession: async (sessionId: string): Promise<Session> => {
+  const response = await axiosInstance.get(`/sessions/${sessionId}`);
+  return response.data;
+},
+
+  // Update session
+  updateSession: async (id: string, data: Partial<Session>): Promise<Session> => {
+    const res = await axiosInstance.put(`/sessions/${id}`, data);
+    return res.data;
   },
 
-  createSession: async (name?: string): Promise<Session> => {
-    const response = await axiosInstance.post('/session', {
-      name: name || `Session - ${new Date().toLocaleDateString()}`
-    });
-    return response.data;
-  },
-
-  updateSession: async (id: string, updates: Partial<Session>): Promise<Session> => {
-    const response = await axiosInstance.patch(`/session/${id}`, updates);
-    return response.data;
-  },
-
+  // Delete a session
   deleteSession: async (id: string): Promise<void> => {
-    await axiosInstance.delete(`/session/${id}`);
+    await axiosInstance.delete(`/sessions/${id}`);
+  },
+};
+// ----------------------------
+// AI Tweak API
+// ----------------------------
+
+export interface TweakCodeRequest {
+  sessionId: string;
+  tweakPrompt: string;
+}
+
+export const aiAPI = {
+  generateCode: async (request: GenerateCodeRequest): Promise<GenerateCodeResponse> => {
+    const response = await axiosInstance.post('/ai/generate', request);
+      console.log("AI API response:", response.data);  // <--- add this
+
+    return response.data;
   },
 
-  exportSession: async (id: string): Promise<Blob> => {
-    const response = await axiosInstance.get(`/session/${id}/export`, {
-      responseType: 'blob',
-    });
+  tweakCode: async (request: TweakCodeRequest): Promise<GenerateCodeResponse> => {
+    const response = await axiosInstance.post('/ai/tweak', request);
+      console.log("AI API response:", response.data);  // <--- add this
+
     return response.data;
   }
 };
@@ -104,9 +128,3 @@ export const sessionAPI = {
 // ----------------------------
 // AI Generation API
 // ----------------------------
-export const aiAPI = {
-  generateCode: async (request: GenerateCodeRequest): Promise<GenerateCodeResponse> => {
-    const response = await axiosInstance.post('/ai/generate', request);
-    return response.data;
-  }
-};

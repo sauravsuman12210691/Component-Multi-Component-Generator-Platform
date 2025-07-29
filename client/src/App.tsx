@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import SessionPage from "./pages/SessionPage";
+import Playground from "./pages/Playground";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,22 @@ const App = () => (
               element={
                 <PrivateRoute>
                   <SessionPage />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+    path="/playground/:id" 
+    element={
+      <PrivateRoute>
+        <Playground />
+      </PrivateRoute>
+    } 
+  />
+            <Route 
+              path="/playground" 
+              element={
+                <PrivateRoute>
+                  <Playground />
                 </PrivateRoute>
               } 
             />
